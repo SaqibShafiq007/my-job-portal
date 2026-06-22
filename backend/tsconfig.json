@@ -9,7 +9,8 @@
     "outDir": "dist",           // compiled JavaScript is emitted here (git-ignored)
     "esModuleInterop": true,    // smooth interop with older CommonJS packages
     "skipLibCheck": true,       // don't re-type-check dependencies' .d.ts files (faster builds)
-    "sourceMap": true           // map runtime errors back to your .ts line numbers
+    "sourceMap": true,           // map runtime errors back to your .ts line numbers'
+    "types": ["node"]
   },
   "include": ["src/**/*"]
 }
