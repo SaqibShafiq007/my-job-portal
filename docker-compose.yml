@@ -1,0 +1,41 @@
+# docker-compose.yml — with the refinements
+services:
+  postgres:
+    image: postgres:16              # ← pinned: match your production major version
+    environment:
+      POSTGRES_USER: portal
+      POSTGRES_PASSWORD: localdevpw
+      POSTGRES_DB: jobportal
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # ← named volume: data survives container removal
+    healthcheck:                          # ← wait until the DB truly accepts connections
+      test: ["CMD-SHELL", "pg_isready -U portal"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7                  # ← pinned
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:                           # ← declare the named volume referenced above
+
+
+  #   ---------------purpose of docker compose down 
+  # It stops and removes 
+  #the currently running containers (Postgres and Redis boxes we started earlier).It stops and removes the currently 
+  # running containers (Postgres and Redis boxes we started earlier).
+
+
+
+  #    ------------purpose of docker compose up -d
+  #It starts fresh containers using your updated docker-compose.yml file
+
+
+
+  #   -------------purpose of docker compose ps
+  #
