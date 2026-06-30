@@ -1,6 +1,6 @@
 
 ## Add the jobs table to your learning log (learning-log/09-model-job-postings.md): the full DDL, the column-vs-JSONB reasoning for each field, and the shape of one example screening_questions entry.
-
+  
 
 CREATE TABLE jobs (
   id                  uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
