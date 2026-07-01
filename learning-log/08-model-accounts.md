@@ -8,6 +8,13 @@ sketch all five tables in your learning log (learning-log/08-model-accounts.md).
 ## users
 id | email | password_hash | role | status | created_at
 
+```sql
+recruiters.user_id    REFERENCES users(id)     ON DELETE CASCADE
+recruiters.company_id REFERENCES companies(id) ON DELETE RESTRICT
+applicants.user_id    REFERENCES users(id)     ON DELETE CASCADE
+admins.user_id        REFERENCES users(id)     ON DELETE CASCADE
+```
+
 ## companies
 id | name | slug | website | verified | suspended | created_at
 

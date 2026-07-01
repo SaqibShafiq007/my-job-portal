@@ -1,10 +1,10 @@
 
 ## Add the jobs table to your learning log (learning-log/09-model-job-postings.md): the full DDL, the column-vs-JSONB reasoning for each field, and the shape of one example screening_questions entry.
   
-
+```sql
 CREATE TABLE jobs (
   id                  uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id          uuid        NOT NULL REFERENCES companies(id),
+  company_id          uuid        NOT NULL REFERENCES companies(id) ON DELETE RESTRICT,
   title               text        NOT NULL,
   description         text        NOT NULL,
   status              text        NOT NULL DEFAULT 'draft'
@@ -16,6 +16,11 @@ CREATE TABLE jobs (
   updated_at          timestamptz NOT NULL DEFAULT now()
 );
 
+
+jobs.company_id REFERENCES companies(id) ON DELETE RESTRICT
+
+
+```
 column:which is to be sort/filter/unique
 jsonB: which can be extended,flexible,part of job;s detail
 

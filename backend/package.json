@@ -7,7 +7,10 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "migrate": "tsx node_modules/node-pg-migrate/bin/node-pg-migrate up",
+    "migrate:down": "tsx node_modules/node-pg-migrate/bin/node-pg-migrate down 1",
+    "migrate:create": "node-pg-migrate create --migration-file-language ts"
   },
   "repository": {
     "type": "git",
@@ -24,12 +27,15 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^25.9.4",
+    "@types/pg": "^8.20.0",
+    "node-pg-migrate": "^8.0.4",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3"
   },
   "dependencies": {
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "pg": "^8.22.0",
     "zod": "^4.4.3"
   }
 }
