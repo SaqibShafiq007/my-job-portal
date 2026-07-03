@@ -30,6 +30,7 @@ CREATE TABLE jobs (
   updated_at          timestamptz NOT NULL DEFAULT now()
 );
 ```
+,
 
 ---
 
