@@ -2,6 +2,7 @@ import express from 'express'
 import { errorHandler } from './shared/error-handler'
 import { NotFoundError } from './shared/errors'
 import { ValidationError } from './shared/validate'
+import { authRouter } from './modules/auth/auth.routes';
 import { z } from 'zod'
 
 export function buildApp() {
@@ -21,6 +22,7 @@ export function buildApp() {
   // Feature routes registered in later chapters
   // app.use('/auth', authRoutes)
   // app.use('/jobs', jobRoutes)
+  app.use('/auth', authRouter);
 
   // Temporary test routes — remove after verifying the error handler
   app.get('/test/not-found', (_req, _res, next) => {

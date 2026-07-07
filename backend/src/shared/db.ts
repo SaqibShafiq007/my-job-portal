@@ -1,2 +1,6 @@
+import { Pool } from 'pg';
 import { config } from './config';
-//export const db = createDbClient(config.DATABASE_URL);   // your ORM/client from Chapter 3
+
+const pool = new Pool({ connectionString: config.DATABASE_URL });
+
+export default pool;
