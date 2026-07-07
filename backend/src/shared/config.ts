@@ -8,6 +8,7 @@ const EnvSchema = z.object({
   DATABASE_URL: z.string().url(),                                  // required; secrets get no default
   REDIS_URL:    z.string().url(),
   JWT_SECRET:   z.string().min(32),                               // required AND long enough to be safe
+  JWT_EXPIRES_IN: z.string().default('15m'),
 });
 
 // Validate the WHOLE environment once, here, at startup.

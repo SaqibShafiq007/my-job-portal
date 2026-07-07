@@ -1,4 +1,5 @@
 // src/modules/auth/auth.service.ts
+import { signAccessToken } from '../../shared/token.js';
 import { hashPassword, verifyPassword } from '../../shared/password';
 import { ConflictError, UnauthorizedError } from '../../shared/errors';
 import { findUserByEmail, createUser } from './auth.repo';
@@ -25,7 +26,7 @@ export async function register(
 
 export async function login(
   input: LoginInput,
-): Promise<{ id: string; email: string; role: string }> {
+): Promise<{ id: string; email: string; role: string ; accessToken: string}> {
   const user = await findUserByEmail(input.email);
 
   if (!user) {
@@ -49,5 +50,6 @@ export async function login(
 
   // Chapter 21 adds token issuance here.
   // The return value expands to { id, email, role, accessToken }.
-  return { id: user.id, email: user.email, role: user.role };
+  const accessToken = signAccessToken({ sub: user.id, role: user.role })
+  return { id: user.id, email: user.email, role: user.role , accessToken};
 }
