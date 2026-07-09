@@ -30,3 +30,61 @@ export async function createUser(
   );
   return rows[0];
 }
+
+
+// --- Refresh token functions ---
+
+export async function createRefreshToken(
+  userId: string,
+  tokenHash: string,
+  expiresAt: Date,
+): Promise<void> {
+  await db.query(
+    `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
+     VALUES ($1, $2, $3)`,
+    [userId, tokenHash, expiresAt],
+  );
+}
+
+export interface RefreshTokenRow {
+  id:         string;
+  user_id:    string;
+  token_hash: string;
+  expires_at: Date;
+  created_at: Date;
+}
+
+export async function findRefreshTokenByHash(
+  hash: string,
+): Promise<RefreshTokenRow | null> {
+  const result = await db.query<RefreshTokenRow>(
+    `SELECT * FROM refresh_tokens
+     WHERE token_hash = $1
+       AND expires_at > NOW()`,
+    [hash],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function deleteRefreshTokenByHash(hash: string): Promise<void> {
+  await db.query(
+    `DELETE FROM refresh_tokens WHERE token_hash = $1`,
+    [hash],
+  );
+}
+
+export async function deleteAllRefreshTokensForUser(userId: string): Promise<void> {
+  await db.query(
+    `DELETE FROM refresh_tokens WHERE user_id = $1`,
+    [userId],
+  );
+}
+
+
+export async function findUserById(id: string): Promise<UserRow | null> {
+  const result = await db.query<UserRow>(
+    `SELECT id, email, role, status FROM users WHERE id = $1`,
+    [id],
+  );
+  return result.rows[0] ?? null;
+}
