@@ -5,6 +5,9 @@ import { hashPassword, verifyPassword } from '../../shared/password';
 import { ConflictError, UnauthorizedError } from '../../shared/errors';
 import crypto from 'node:crypto';
 import { config } from '../../shared/config';
+import { sendVerificationEmail } from '../../shared/mailer';
+
+import { generateOtp, hashOtp } from '../../shared/otp.js';
 import {
   findUserByEmail,
   createUser,
@@ -13,6 +16,10 @@ import {
   deleteRefreshTokenByHash,
   deleteAllRefreshTokensForUser,
   findUserById,
+  createEmailVerification,
+  findEmailVerification,
+  deleteEmailVerificationsForUser,
+  activateUser,
 } from './auth.repo';
 
 
@@ -33,7 +40,22 @@ export async function register(
   }
 
   const passwordHash = await hashPassword(input.password);
-  return createUser(input.email, passwordHash, input.role);
+  const user = await createUser(input.email, passwordHash, input.role);
+  // user.id is the newly created user's UUID.
+  // status is 'pending' — set by the INSERT in auth.repo.ts.
+
+  // Generate a 6-digit OTP and store its hash.
+  const otp = generateOtp();
+  const otpHash = hashOtp(otp);
+  const expiresAt = new Date(Date.now() + config.OTP_EXPIRES_IN_MINUTES * 60 * 1000);
+
+  await createEmailVerification(user.id, otpHash, expiresAt);
+
+  // Send the raw OTP to the user's email address.
+  // The raw OTP is never stored — only the hash is in the database.
+  await sendVerificationEmail(input.email, otp);
+
+  return user;
 }
 
 export async function login(
@@ -46,9 +68,15 @@ export async function login(
     throw new UnauthorizedError('Invalid credentials');
   }
 
-  if (user.status !== 'active') {
+  if (user.status === 'pending') {
+  throw new UnauthorizedError('Email not verified');
+  }
+
+  
+  if (user.status === 'suspended') {
     throw new UnauthorizedError('Account suspended');
   }
+  
 
   const valid = await verifyPassword(input.password, user.password_hash);
   if (!valid) {
@@ -135,3 +163,65 @@ export async function logout(rawToken: string): Promise<void> {
   await deleteRefreshTokenByHash(hash);
 }
 
+export async function verifyEmail(
+  email: string,
+  otp: string,
+): Promise<void> {
+  // Use a generic error for all failure paths to avoid revealing whether
+  // an email is registered, whether an OTP exists, or whether it expired.
+  const user = await findUserByEmail(email);
+  if (!user) {
+    throw new UnauthorizedError('Invalid verification code');
+  }
+
+  // Already active: idempotent early return. Handles double-submit and
+  // retries after a network failure on the success response.
+  if (user.status === 'active') {
+    return;
+  }
+
+  // Returns null if no row exists OR if the row has expired.
+  const verification = await findEmailVerification(user.id);
+  if (!verification) {
+    throw new UnauthorizedError('Invalid verification code');
+  }
+
+  const submittedHash = hashOtp(otp);
+  if (submittedHash !== verification.otp_hash) {
+    throw new UnauthorizedError('Invalid verification code');
+  }
+
+  await activateUser(user.id);
+  await deleteEmailVerificationsForUser(user.id);
+}
+
+export async function resendVerification(email: string): Promise<void> {
+  const user = await findUserByEmail(email);
+
+  // If the email is not registered, return normally — do not reveal
+  // whether the address is in the system. The caller sees a 200 either way.
+  if (!user) {
+    return;
+  }
+
+  // If the account is already active, there is nothing to resend.
+  // Return normally — do not error.
+  if (user.status === 'active') {
+    return;
+  }
+
+  // Only resend for pending accounts.
+  // A suspended account should not receive a verification email.
+  if (user.status !== 'pending') {
+    return;
+  }
+
+  const otp = generateOtp();
+  const otpHash = hashOtp(otp);
+  const expiresAt = new Date(Date.now() + config.OTP_EXPIRES_IN_MINUTES * 60 * 1000);
+
+  // createEmailVerification deletes any existing row before inserting the new one.
+  // The old OTP is invalidated; user cannot use it after requesting a resend.
+  await createEmailVerification(user.id, otpHash, expiresAt);
+  await sendVerificationEmail(email, otp);
+}

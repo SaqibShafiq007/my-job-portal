@@ -1,7 +1,7 @@
 # docker-compose.yml — with the refinements
 services:
   postgres:
-    image: postgres:16              # ← pinned: match your production major version
+    image: postgres:16
     environment:
       POSTGRES_USER: portal
       POSTGRES_PASSWORD: localdevpw
@@ -9,22 +9,26 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data   # ← named volume: data survives container removal
-    healthcheck:                          # ← wait until the DB truly accepts connections
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
       test: ["CMD-SHELL", "pg_isready -U portal"]
       interval: 5s
       timeout: 3s
       retries: 5
 
   redis:
-    image: redis:7                  # ← pinned
+    image: redis:7
     ports:
       - "6379:6379"
 
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "1025:1025"   # SMTP port — your app sends emails here
+      - "4025:8025"   # Web UI — view caught emails at http://localhost:4025
+
 volumes:
-  pgdata:                           # ← declare the named volume referenced above
-
-
+  pgdata:
   #   ---------------purpose of docker compose down 
   # It stops and removes 
   #the currently running containers (Postgres and Redis boxes we started earlier).It stops and removes the currently 

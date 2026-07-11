@@ -19,5 +19,16 @@ export const logoutSchema = z.object({
   refreshToken: z.string().min(1),
 });
 
+// src/modules/auth/auth.schema.ts — additions
+
+export const verifyEmailSchema = z.object({
+  email: z.string().email(),
+  otp:   z.string().length(6).regex(/^\d{6}$/),//gives correct error
+});
+
+export const resendVerificationSchema = z.object({
+  email: z.string().email(),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput    = z.infer<typeof loginSchema>;

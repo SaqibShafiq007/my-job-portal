@@ -6,8 +6,17 @@ import {
   loginSchema,
   refreshSchema,
   logoutSchema,
+  verifyEmailSchema,
+  resendVerificationSchema,
 } from './auth.schema';
-import { register, login, refresh, logout } from './auth.service';
+import {
+  register,
+  login,
+  refresh,
+  logout,
+  verifyEmail,
+  resendVerification,
+} from './auth.service';
 
 const router = Router();
 
@@ -46,6 +55,26 @@ router.post('/logout', async (req, res, next) => {
     const { refreshToken } = validateBody(logoutSchema, req.body);
     await logout(refreshToken);
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/verify-email', async (req, res, next) => {
+  try {
+    const { email, otp } = validateBody(verifyEmailSchema, req.body);
+    await verifyEmail(email, otp);
+    res.status(200).json({ message: 'Email verified successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/resend-verification', async (req, res, next) => {
+  try {
+    const { email } = validateBody(resendVerificationSchema, req.body);
+    await resendVerification(email);
+    res.status(200).json({ message: 'If that email is pending verification, a new code has been sent' });
   } catch (err) {
     next(err);
   }
