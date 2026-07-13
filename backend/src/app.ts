@@ -3,6 +3,10 @@ import { errorHandler } from './shared/error-handler'
 import { NotFoundError } from './shared/errors'
 import { ValidationError } from './shared/validate'
 import { authRouter } from './modules/auth/auth.routes';
+import { companiesRouter } from './modules/companies/companies.routes';
+import { applicantsRouter } from './modules/applicants/applicants.routes';
+import { adminRouter } from './modules/admin/admin.routes';
+
 import { z } from 'zod'
 
 export function buildApp() {
@@ -23,25 +27,10 @@ export function buildApp() {
   // app.use('/auth', authRoutes)
   // app.use('/jobs', jobRoutes)
   app.use('/auth', authRouter);
+  app.use('/api/companies', companiesRouter);
+  app.use('/api/applicants', applicantsRouter);
+  app.use('/api/admin', adminRouter);
 
-  // Temporary test routes — remove after verifying the error handler
-  app.get('/test/not-found', (_req, _res, next) => {
-    next(new NotFoundError('Job not found'))
-  })
-
-  app.get('/test/validation', (_req, _res, next) => {
-    const schema = z.object({ title: z.string().min(1) })
-    const result = schema.safeParse({})
-    if (!result.success) {
-      next(new ValidationError(result.error))
-    } else {
-      next(new Error('Unexpected: schema should have failed'))
-    }
-  })
-
-  app.get('/test/unhandled', (_req, _res, next) => {
-    next(new Error('oops — raw error'))
-  })
 
   app.use(errorHandler)
 
