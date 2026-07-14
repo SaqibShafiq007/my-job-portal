@@ -1,9 +1,12 @@
-import { NotFoundError } from '../../shared/errors';
+import { NotFoundError,ConflictError  } from '../../shared/errors';
 import {
   getRecruiterCompany,
   getCompanyById,
+  createCompany ,
   type Company,
 } from './companies.repo';
+import type { CreateCompanyInput } from './companies.schema';
+
 
 /**
  * Returns the company associated with the authenticated recruiter.
@@ -31,3 +34,24 @@ export async function getMyCompany(userId: string): Promise<Company> {
 
   return company;
 }
+
+
+
+
+export async function openWorkspace(userId: string, input: CreateCompanyInput) {
+  // Guard: a user can own at most one company
+  const existing = await getRecruiterCompany(userId);
+  if (existing) {
+    throw new ConflictError('You already have a company workspace.');
+  }
+
+  return createCompany(userId, input);
+}
+
+
+
+
+
+
+
+

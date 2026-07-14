@@ -1,4 +1,7 @@
+import { v4 as uuid } from 'uuid';
 import db from '../../shared/db';
+import type { CreateCompanyInput } from './companies.schema';
+
 
 // ISOLATION RULE:Every piece of data belongs to someone specific, and the 
 // server must only show it to that specific someone — never to anyone else, 
@@ -8,7 +11,42 @@ import db from '../../shared/db';
 // from a URL parameter or request body. The recruiter cannot control which
 // company_id is used to scope their queries.
 
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
 
+export async function createCompany(
+  userId: string,
+  input: CreateCompanyInput,
+): Promise<{ companyId: string; name: string }> {
+  const companyId = uuid();
+  const recruiterId = uuid();
+  const slug = slugify(input.name) + '-' + companyId.slice(0, 8);
+
+  await db.query('BEGIN');
+  try {
+    await db.query(
+      `INSERT INTO companies (id, name, slug, website, verified)
+       VALUES ($1, $2, $3, $4, false)`,
+      [companyId, input.name, slug, input.website ?? null],
+    );
+    await db.query(
+      `INSERT INTO recruiters (id, user_id, company_id, company_role, created_at)
+       VALUES ($1, $2, $3, 'owner', NOW())`,
+      [recruiterId, userId, companyId],
+    );
+    await db.query('COMMIT');
+  } catch (err) {
+    await db.query('ROLLBACK');
+    throw err;
+  }
+
+  return { companyId, name: input.name };
+}
 
 export interface RecruiterCompany {
   companyId: string;

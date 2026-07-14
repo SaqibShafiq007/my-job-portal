@@ -2,6 +2,10 @@ import { Router } from 'express';
 import { authMiddleware } from '../../shared/auth-middleware';
 import { requireRole } from '../../shared/require-role';
 import { getMyCompany } from './companies.service';
+import {validateBody    } from '../../shared/validate';
+import { createCompanySchema } from './companies.schema';
+import { openWorkspace } from './companies.service';
+
 
 const router = Router();
 
@@ -24,5 +28,21 @@ router.get('/me', async (req, res, next) => {
     next(err);
   }
 });
+
+
+router.post('/', async (req, res, next) => {
+  try {
+    const input = validateBody(createCompanySchema, req.body);//chk if it is a valid company
+    const result = await openWorkspace(req.user!.userId, input); // chk if recruiter already have a company or not
+    res.status(201).json({
+    companyId: result.companyId,
+    name: result.name,
+    verified: false,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 export { router as companiesRouter };
