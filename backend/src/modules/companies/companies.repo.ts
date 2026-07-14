@@ -1,5 +1,15 @@
 import db from '../../shared/db';
 
+// ISOLATION RULE:Every piece of data belongs to someone specific, and the 
+// server must only show it to that specific someone — never to anyone else, 
+// even if they're a real, logged-in user of the same app. Every company-scoped
+//  query must include company_id from
+// the authenticated recruiter row (resolved via getRecruiterCompany), never
+// from a URL parameter or request body. The recruiter cannot control which
+// company_id is used to scope their queries.
+
+
+
 export interface RecruiterCompany {
   companyId: string;
   companyRole: string;
