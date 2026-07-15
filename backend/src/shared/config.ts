@@ -16,6 +16,8 @@ const EnvSchema = z.object({
   SMTP_PASS:              z.string().default(''),
   SMTP_FROM:              z.string().default('noreply@jobportal.local'),
   OTP_EXPIRES_IN_MINUTES: z.coerce.number().int().positive().default(15),
+  INVITATION_EXPIRES_IN_HOURS: z.coerce.number().int().positive().default(72),
+  APP_BASE_URL: z.string().default('http://localhost:3000'),
 });
 
 // Validate the WHOLE environment once, here, at startup.

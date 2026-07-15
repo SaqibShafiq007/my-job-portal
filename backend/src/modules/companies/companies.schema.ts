@@ -6,4 +6,11 @@ export const createCompanySchema = z.object({
   description: z.string().max(2000).optional(),
 });
 
+export const inviteMemberSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(['hr_manager', 'recruiter', 'hiring_manager']),
+});
+
+export type InviteMemberInput = z.infer<typeof inviteMemberSchema>;
+
 export type CreateCompanyInput = z.infer<typeof createCompanySchema>;

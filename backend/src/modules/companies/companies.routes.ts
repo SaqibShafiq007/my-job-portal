@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { authMiddleware } from '../../shared/auth-middleware';
 import { requireRole } from '../../shared/require-role';
-import { getMyCompany } from './companies.service';
+import { getMyCompany, inviteMember } from './companies.service';
 import {validateBody    } from '../../shared/validate';
-import { createCompanySchema } from './companies.schema';
+import { createCompanySchema, inviteMemberSchema } from './companies.schema';
 import { openWorkspace } from './companies.service';
 
 
@@ -44,5 +44,15 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+
+router.post('/invitations', async (req, res, next) => {
+  try {
+    const input = validateBody(inviteMemberSchema, req.body);
+    await inviteMember(req.user!.userId, input);
+    res.status(201).json({ message: 'Invitation sent.' });
+  } catch (err) {
+    next(err);
+  }
+});
 
 export { router as companiesRouter };

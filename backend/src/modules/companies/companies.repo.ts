@@ -1,7 +1,8 @@
 import { v4 as uuid } from 'uuid';
 import db from '../../shared/db';
 import type { CreateCompanyInput } from './companies.schema';
-
+import crypto from 'crypto';
+import { config } from '../../shared/config';
 
 // ISOLATION RULE:Every piece of data belongs to someone specific, and the 
 // server must only show it to that specific someone — never to anyone else, 
@@ -113,4 +114,61 @@ export async function getCompanyById(companyId: string): Promise<Company | null>
   }
 
   return result.rows[0];
+}
+
+
+
+
+export async function createInvitation(
+  companyId: string,
+  email: string,
+  role: string,
+): Promise<string> {
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const invitationId = uuid();
+
+  await db.query(
+    `INSERT INTO invitations (id, company_id, email, role, token_hash, expires_at, created_at)
+     VALUES ($1, $2, $3, $4, $5, NOW() + ($6 || ' hours')::interval, NOW())`,
+    [
+      invitationId,
+      companyId,
+      email,
+      role,
+      tokenHash,
+      String(config.INVITATION_EXPIRES_IN_HOURS),
+    ],
+  );
+
+  return rawToken; // raw token returned to the caller; only the hash is stored
+}
+
+
+// checks: "has this exact person already been invited to
+// this company, and is that invite still valid (not expired)?"
+export async function findPendingInvitation(
+  companyId: string,
+  email: string,
+): Promise<{ id: string } | null> {
+  const result = await db.query(
+    `SELECT id FROM invitations
+     WHERE company_id = $1 AND email = $2 AND expires_at > NOW()`,
+    [companyId, email],
+  );
+  return result.rows[0] ?? null;
+}
+
+//checks: "is this person already part of the company?"
+export async function findExistingMember(
+  companyId: string,
+  email: string,
+): Promise<{ id: string } | null> {
+  const result = await db.query(
+    `SELECT r.id FROM recruiters r
+     JOIN users u ON u.id = r.user_id
+     WHERE r.company_id = $1 AND u.email = $2`,
+    [companyId, email],
+  );
+  return result.rows[0] ?? null;
 }

@@ -1,11 +1,15 @@
-import { NotFoundError,ConflictError  } from '../../shared/errors';
+import { NotFoundError,ConflictError, ForbiddenError  } from '../../shared/errors';
+import { sendInvitationEmail } from './companies.email';
 import {
   getRecruiterCompany,
   getCompanyById,
   createCompany ,
   type Company,
+  findExistingMember,
+  findPendingInvitation,
+  createInvitation,
 } from './companies.repo';
-import type { CreateCompanyInput } from './companies.schema';
+import type { CreateCompanyInput, InviteMemberInput } from './companies.schema';
 
 
 /**
@@ -50,8 +54,27 @@ export async function openWorkspace(userId: string, input: CreateCompanyInput) {
 
 
 
+export async function inviteMember(userId: string, input: InviteMemberInput) {
+  const company = await getRecruiterCompany(userId); //Does this person even have a company
+  if (!company) throw new ForbiddenError('No company workspace found.');
 
+  assertCompanyRole(company.companyRole, ['owner', 'hr_manager']); //Are they allowed to invite people? — only the owner or hr_manager can invite
 
+  const existing = await findExistingMember(company.companyId, input.email);  //Is this email already a member? — stop if yes, can't invite twice.
+  if (existing) throw new ConflictError('This person is already a member of your company.');
 
+  const pending = await findPendingInvitation(company.companyId, input.email); //Is there already a pending invite for them?
+  if (pending) throw new ConflictError('A pending invitation for this email already exists.');
+
+  const rawToken = await createInvitation(company.companyId, input.email, input.role);
+
+  await sendInvitationEmail(input.email, rawToken);
+}
+
+function assertCompanyRole(companyRole: string, allowed: string[]) {
+  if (!allowed.includes(companyRole)) {
+    throw new ForbiddenError('You do not have permission to perform this action.');
+  }
+}
 
 
