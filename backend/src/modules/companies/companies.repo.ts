@@ -172,3 +172,66 @@ export async function findExistingMember(
   );
   return result.rows[0] ?? null;
 }
+
+
+export async function listCompanyMembers(companyId: string): Promise<
+  Array<{
+    recruiterId: string;
+    userId: string;
+    email: string;
+    companyRole: string;
+    joinedAt: string;
+  }>
+> {
+  const result = await db.query(
+    `SELECT
+       r.id AS "recruiterId",
+       r.user_id AS "userId",
+       u.email,
+       r.company_role AS "companyRole",
+       r.created_at AS "joinedAt"
+     FROM recruiters r
+     JOIN users u ON u.id = r.user_id
+     WHERE r.company_id = $1
+     ORDER BY r.created_at ASC`,
+    [companyId],
+  );
+  return result.rows;
+}
+
+
+//checl does this  recruiter ID actually belong to this specific company?
+export async function getMemberById(
+  recruiterId: string,
+  companyId: string,
+): Promise<{ userId: string; companyRole: string } | null> {
+  const result = await db.query(
+    `SELECT user_id AS "userId", company_role AS "companyRole"
+     FROM recruiters
+     WHERE id = $1 AND company_id = $2`,
+    [recruiterId, companyId],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function updateMemberRole(
+  recruiterId: string,
+  companyId: string,
+  newRole: string,
+): Promise<void> {
+  await db.query(
+    `UPDATE recruiters SET company_role = $1
+     WHERE id = $2 AND company_id = $3`,
+    [newRole, recruiterId, companyId],
+  );
+}
+
+export async function removeMember(
+  recruiterId: string,
+  companyId: string,
+): Promise<void> {
+  await db.query(
+    `DELETE FROM recruiters WHERE id = $1 AND company_id = $2`,
+    [recruiterId, companyId],
+  );
+}
