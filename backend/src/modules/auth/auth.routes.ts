@@ -8,6 +8,7 @@ import {
   logoutSchema,
   verifyEmailSchema,
   resendVerificationSchema,
+  acceptInvitationSchema,
 } from './auth.schema';
 import {
   register,
@@ -16,6 +17,7 @@ import {
   logout,
   verifyEmail,
   resendVerification,
+  acceptInvitation,
 } from './auth.service';
 
 const router = Router();
@@ -75,6 +77,18 @@ router.post('/resend-verification', async (req, res, next) => {
     const { email } = validateBody(resendVerificationSchema, req.body);
     await resendVerification(email);
     res.status(200).json({ message: 'If that email is pending verification, a new code has been sent' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+// No authMiddleware — the raw token is the credential
+router.post('/accept-invitation', async (req, res, next) => {
+  try {
+    const input = validateBody(acceptInvitationSchema, req.body);
+    const tokens = await acceptInvitation(input);
+    res.status(200).json(tokens);
   } catch (err) {
     next(err);
   }

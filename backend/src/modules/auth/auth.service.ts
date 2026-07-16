@@ -2,11 +2,11 @@
 import { signAccessToken } from '../../shared/token.js';
 import type { RegisterInput, LoginInput } from './auth.schema';
 import { hashPassword, verifyPassword } from '../../shared/password';
-import { ConflictError, UnauthorizedError } from '../../shared/errors';
+import { BadRequestError, ConflictError, ForbiddenError, UnauthorizedError } from '../../shared/errors';
 import crypto from 'node:crypto';
 import { config } from '../../shared/config';
 import { sendVerificationEmail } from '../../shared/mailer';
-
+import bcrypt from 'bcryptjs';
 import { generateOtp, hashOtp } from '../../shared/otp.js';
 import {
   findUserByEmail,
@@ -20,8 +20,13 @@ import {
   findEmailVerification,
   deleteEmailVerificationsForUser,
   activateUser,
+  findInvitationByToken,
+  createVerifiedUser,
+  createRecruiterRow,
+  deleteInvitation,
 } from './auth.repo';
 
+import type { AcceptInvitationInput } from './auth.schema';
 
 
 // A pre-computed bcrypt hash of a throwaway string.
@@ -225,3 +230,72 @@ export async function resendVerification(email: string): Promise<void> {
   await createEmailVerification(user.id, otpHash, expiresAt);
   await sendVerificationEmail(email, otp);
 }
+
+
+//This function runs when someone clicks their invite link and submits it.
+export async function acceptInvitation(input: AcceptInvitationInput) {
+  
+  // Step 1: Resolve the invitation
+  const invitation = await findInvitationByToken(input.token);
+  if (!invitation) {
+    throw new BadRequestError('Invalid or expired invitation token.');
+  }
+
+  // Step 2: Email that wast sent must match the invitation
+  if (invitation.email.toLowerCase() !== input.email.toLowerCase()) {
+    throw new BadRequestError('Invalid or expired invitation token.');
+  }
+
+  // Step 3: Resolve or create the user
+  let userId: string;
+  let userRole: 'admin' | 'recruiter' | 'applicant';;
+  
+  //chk if someone already have an account?
+  const existingUser = await findUserByEmail(input.email);
+  
+
+
+  if (existingUser) {
+    //If their existing account isn't active (like still pending email verification), 
+    // block them — can't accept an invite with a broken account.
+    if (existingUser.status !== 'active') {
+      throw new ForbiddenError('Your account is not active.');
+    }
+    userId = existingUser.id;
+    userRole = existingUser.role;
+  } else {
+    // New user — password required
+    if (!input.password) {
+      throw new BadRequestError('Password is required to create a new account.');
+    }
+    const passwordHash = await bcrypt.hash(input.password, 12);
+    userId = await createVerifiedUser(input.email, passwordHash);//crete ccount
+    userRole = 'recruiter';
+  }
+
+  // Step 4: Attach the user to the company as a recruiter
+  await createRecruiterRow(userId, invitation.companyId, invitation.role);
+
+  // Step 5: Delete the invitation (one-time use)
+  await deleteInvitation(invitation.id);
+
+  // Step 6: Issue tokens so the invitee is immediately logged in
+  return issueTokenPair(userId, userRole);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

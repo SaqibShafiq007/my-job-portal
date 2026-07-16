@@ -1,5 +1,8 @@
 // src/modules/auth/auth.repo.ts
 import db from '../../shared/db';
+import crypto from 'crypto';
+import { v4 as uuid } from 'uuid';
+
 
 export interface UserRow {
   id:            string;
@@ -147,3 +150,70 @@ export async function activateUser(userId: string): Promise<void> {
     [userId],
   );
 }
+
+
+// Find a valid (non-expired) invitation by its raw token
+export async function findInvitationByToken(rawToken: string): Promise<{
+  id: string;
+  companyId: string;
+  email: string;
+  role: string;
+  } | null> {
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex'); //converts the original token into its hash
+  const result = await db.query(
+    `SELECT id, company_id AS "companyId", email, role
+     FROM invitations
+     WHERE token_hash = $1 AND expires_at > NOW()`,
+    [tokenHash],
+  );
+  return result.rows[0] ?? null;
+}
+
+
+
+// Create a pre-verified user (no email verification needed — invitation proves ownership)
+export async function createVerifiedUser(
+  email: string,
+  passwordHash: string,
+): Promise<string> {
+  const userId = uuid();
+  await db.query(
+    `INSERT INTO users (id, email, password_hash, role, status)
+     VALUES ($1, $2, $3, 'recruiter', 'active')`,
+    [userId, email, passwordHash],
+  );
+  return userId;
+}
+
+// Attach a user to a company with the invited role
+export async function createRecruiterRow(
+  userId: string,
+  companyId: string,
+  role: string,
+): Promise<void> {
+  const recruiterId = uuid();
+  await db.query(
+    `INSERT INTO recruiters (id, user_id, company_id, company_role, created_at)
+     VALUES ($1, $2, $3, $4, NOW())`,
+    [recruiterId, userId, companyId, role],
+  );
+}
+
+// Delete the invitation row after acceptance
+export async function deleteInvitation(invitationId: string): Promise<void> {
+  await db.query(`DELETE FROM invitations WHERE id = $1`, [invitationId]);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

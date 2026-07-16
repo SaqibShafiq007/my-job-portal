@@ -30,5 +30,15 @@ export const resendVerificationSchema = z.object({
   email: z.string().email(),
 });
 
+
+//when someone accepts an invite, they must send token , email and password(optional)
+export const acceptInvitationSchema = z.object({
+  token: z.string().min(1),
+  email: z.string().email(),
+  password: z.string().min(8).optional(),
+});
+
+export type AcceptInvitationInput = z.infer<typeof acceptInvitationSchema>;
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput    = z.infer<typeof loginSchema>;

@@ -1,0 +1,3 @@
+Why we need this chapter — in plain words
+Remember last chapter (33), we built the ability for an owner to send an invite. But we never built what happens when someone actually clicks the link in that email. Right now, clicking it gives "Cannot GET /auth/accept-invitation" — because that route doesn't exist yet.
+This chapter builds that missing piece: what happens when the invitee submits their invite token.
