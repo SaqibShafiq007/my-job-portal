@@ -4,6 +4,9 @@ import { requireRole } from '../../shared/require-role';
 import { getRecruiterCompany } from '../companies/companies.repo';
 import { assertJobOwnership } from './jobs.repo';
 import { NotFoundError } from '../../shared/errors';
+import { closeJob, editJob, postJob, publishJob } from './jobs.service';
+import { validateBody } from '../../shared/validate';
+import { createJobSchema } from './jobs.schema';
 
 const router = Router();
 
@@ -39,5 +42,48 @@ router.get('/:id', async (req, res, next) => {
     next(err);
   }
 });
+
+
+//post job
+router.post('/', async (req, res, next) => {
+  try {
+    const input = validateBody(createJobSchema, req.body);
+    const result = await postJob(req.user!.userId, input);
+    res.status(201).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/:id', async (req, res, next) => {
+  try {
+    const input = validateBody(createJobSchema.partial(), req.body);
+    await editJob(req.user!.userId, req.params.id, input);
+    res.json({ message: 'Job updated.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/publish', async (req, res, next) => {
+  try {
+    await publishJob(req.user!.userId, req.params.id);
+    res.json({ message: 'Job published.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/close', async (req, res, next) => {
+  try {
+    await closeJob(req.user!.userId, req.params.id);
+    res.json({ message: 'Job closed.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+
 
 export { router as jobsRouter };

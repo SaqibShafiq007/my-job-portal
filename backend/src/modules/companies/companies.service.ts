@@ -75,7 +75,7 @@ export async function inviteMember(userId: string, input: InviteMemberInput) {
   await sendInvitationEmail(input.email, rawToken);
 }
 
-function assertCompanyRole(companyRole: string, allowed: string[]) {
+export function assertCompanyRole(companyRole: string, allowed: string[]) {
   if (!allowed.includes(companyRole)) {
     throw new ForbiddenError('You do not have permission to perform this action.');
   }
