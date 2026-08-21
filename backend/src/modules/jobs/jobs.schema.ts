@@ -29,6 +29,15 @@ export const listJobsQuerySchema = z.object({
   limit:  z.coerce.number().int().min(1).max(100).default(20),
 });
 
+export const listCompanyJobsSchema = z.object({
+  status: z.enum(['draft', 'open', 'closed']).optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
 export type CreateJobInput   = z.infer<typeof createJobSchema>;
 export type UpdateJobInput   = z.infer<typeof updateJobSchema>;
 export type ListJobsQuery    = z.infer<typeof listJobsQuerySchema>;
+export type ListCompanyJobsInput = z.infer<typeof listCompanyJobsSchema>;
+
+

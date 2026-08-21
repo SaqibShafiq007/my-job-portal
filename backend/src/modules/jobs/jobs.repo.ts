@@ -1,7 +1,7 @@
 import db from '../../shared/db';
 import { NotFoundError } from '../../shared/errors';
 import { v4 as uuid } from 'uuid';
-import { CreateJobInput } from './jobs.schema';
+import { CreateJobInput, ListCompanyJobsInput } from './jobs.schema';
 
 // ISOLATION RULE:Every piece of data belongs to someone specific, and the 
 // server must only show it to that specific someone — never to anyone else, 
@@ -155,7 +155,64 @@ export async function setJobStatus(
   );
 }
 
+export async function listJobsForCompany(
+  companyId: string,
+  input: ListCompanyJobsInput,
+): Promise<Array<{ id: string; title: string; status: string; createdAt: string }>> {
+  const params: unknown[] = [companyId];
+  const conditions: string[] = ['company_id = $1'];
+  let idx = 2;
 
+  if (input.status) {
+    conditions.push(`status = $${idx}`);
+    params.push(input.status);
+    idx++;
+  }
+
+  if (input.cursor) {
+    const decoded = decodeCursor(input.cursor);
+    if (decoded) {
+      conditions.push(`(created_at, id) < ($${idx}::timestamptz, $${idx + 1})`);
+      params.push(decoded.createdAt, decoded.id);
+      idx += 2;
+    }
+    // If cursor is malformed, ignore it and return from the start
+  }
+
+  params.push(input.limit + 1); // fetch one extra to detect if there is a next page
+
+  const result = await db.query(
+    `SELECT id, title, status, created_at AS "createdAt"
+     FROM jobs
+     WHERE ${conditions.join(' AND ')}
+     ORDER BY created_at DESC, id DESC
+     LIMIT $${idx}`,
+    params,
+  );
+
+  return result.rows;
+}
+
+// Encode: created_at ISO string + '|' + id
+export function encodeCursor(createdAt: Date | string, id: string): string {
+  const ts = createdAt instanceof Date ? createdAt.toISOString() : createdAt;//Takes the last job's createdAt and id Converts that string into base64url encoding — makes it URL-safe
+  return Buffer.from(`${ts}|${id}`).toString('base64url');
+}
+
+// Decode: returns { createdAt: string, id: string } or null if invalid
+export function decodeCursor(cursor: string): { createdAt: string; id: string } | null {
+  try {
+    const raw = Buffer.from(cursor, 'base64url').toString('utf8');  //Reverses the encoding: base64url → back to "2026-08-21T10:00:00.000Z|abc-123".
+    const pipeIdx = raw.lastIndexOf('|');
+    if (pipeIdx === -1) return null;
+    return {
+      createdAt: raw.slice(0, pipeIdx),
+      id: raw.slice(pipeIdx + 1),
+    };
+  } catch {
+    return null;
+  }
+}
 
 
 

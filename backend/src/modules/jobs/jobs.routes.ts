@@ -4,9 +4,9 @@ import { requireRole } from '../../shared/require-role';
 import { getRecruiterCompany } from '../companies/companies.repo';
 import { assertJobOwnership } from './jobs.repo';
 import { NotFoundError } from '../../shared/errors';
-import { closeJob, editJob, postJob, publishJob } from './jobs.service';
+import { closeJob, editJob, getCompanyJobs, postJob, publishJob } from './jobs.service';
 import { validateBody } from '../../shared/validate';
-import { createJobSchema } from './jobs.schema';
+import { createJobSchema, listCompanyJobsSchema } from './jobs.schema';
 
 const router = Router();
 
@@ -84,6 +84,14 @@ router.post('/:id/close', async (req, res, next) => {
 });
 
 
-
+router.get('/', async (req, res, next) => {
+  try {
+    const input = validateBody(listCompanyJobsSchema, req.query);
+    const result = await getCompanyJobs(req.user!.userId, input);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
 
 export { router as jobsRouter };
