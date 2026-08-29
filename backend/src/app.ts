@@ -8,6 +8,7 @@ import { applicantsRouter } from './modules/applicants/applicants.routes';
 import { adminRouter } from './modules/admin/admin.routes';
 import { jobsRouter } from './modules/jobs/jobs.routes';
 import { z } from 'zod'
+import { publicRouter } from './modules/public/publicRouter';
 
 export function buildApp() {
   const app = express()
@@ -26,6 +27,7 @@ export function buildApp() {
   // Feature routes registered in later chapters
   // app.use('/auth', authRoutes)
   // app.use('/jobs', jobRoutes)
+  app.use('/api/public', publicRouter);
   app.use('/auth', authRouter);
   app.use('/api/companies', companiesRouter);
   app.use('/api/applicants', applicantsRouter);
