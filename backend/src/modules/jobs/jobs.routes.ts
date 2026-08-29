@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authMiddleware } from '../../shared/auth-middleware';
 import { requireRole } from '../../shared/require-role';
 import { getRecruiterCompany } from '../companies/companies.repo';
-import { assertJobOwnership } from './jobs.repo';
+import { assertJobOwnership ,getJobById } from './jobs.repo';
 import { NotFoundError } from '../../shared/errors';
 import { closeJob, editJob, getCompanyJobs, postJob, publishJob } from './jobs.service';
 import { validateBody } from '../../shared/validate';
@@ -34,10 +34,12 @@ router.get('/:id', async (req, res, next) => {
 
     await assertJobOwnership(req.params.id, recruiter.companyId);
 
-    // assertJobOwnership throws if ownership fails.
-    // Reaching this point means the job exists and belongs to this company.
-    // A full implementation would fetch complete job details here.
-    res.json({ jobId: req.params.id, companyId: recruiter.companyId });
+    const job = await getJobById(req.params.id, recruiter.companyId);
+    if (!job) {
+      return next(new NotFoundError('Job not found'));
+    }
+
+    res.json(job);
   } catch (err) {
     next(err);
   }

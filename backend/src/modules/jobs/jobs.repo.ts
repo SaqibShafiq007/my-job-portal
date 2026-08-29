@@ -215,11 +215,27 @@ export function decodeCursor(cursor: string): { createdAt: string; id: string } 
 }
 
 
-
-
-
-
-
+export async function getJobById(
+  jobId: string,
+  companyId: string,
+): Promise<{
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  deadline: string | null;
+  attributes: Record<string, unknown>;
+  screening_questions: unknown[];
+  createdAt: string;
+} | null> {
+  const result = await db.query(
+    `SELECT id, title, description, status, deadline, attributes, screening_questions, created_at AS "createdAt"
+     FROM jobs
+     WHERE id = $1 AND company_id = $2`,
+    [jobId, companyId],
+  );
+  return result.rows[0] ?? null;
+}
 
 
 
