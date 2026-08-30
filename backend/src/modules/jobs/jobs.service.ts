@@ -3,7 +3,9 @@ import { getRecruiterCompany } from '../companies/companies.repo';
 import { assertCompanyRole } from '../companies/companies.service';
 import { assertJobOwnership, createJob, updateJob, setJobStatus, listJobsForCompany, encodeCursor } from './jobs.repo';
 import type { CreateJobInput, ListCompanyJobsInput } from './jobs.schema';
+import redis from '../../shared/redis'; 
 
+const PUBLIC_BOARD_CACHE_KEY = 'jobs:public:page1'; 
 
 const JOB_POSTERS = ['owner', 'hr_manager', 'recruiter'] as const;
 
@@ -33,6 +35,8 @@ export async function editJob(
   await updateJob(jobId, company.companyId, input);
 }
 
+
+
 export async function publishJob(userId: string, jobId: string) {
   const company = await getRecruiterCompany(userId);
   if (!company) throw new ForbiddenError('No company workspace found.');
@@ -41,6 +45,13 @@ export async function publishJob(userId: string, jobId: string) {
 
   await assertJobOwnership(jobId, company.companyId);
   await setJobStatus(jobId, company.companyId, 'open');
+
+  // Invalidate the public board cache so the next request reflects this change.
+   try {
+    await redis.del(PUBLIC_BOARD_CACHE_KEY);
+  } catch (err) {
+    console.error('[cache] Failed to invalidate public board cache:', err);
+  }
 }
 
 export async function closeJob(userId: string, jobId: string) {
@@ -51,6 +62,15 @@ export async function closeJob(userId: string, jobId: string) {
 
   await assertJobOwnership(jobId, company.companyId);
   await setJobStatus(jobId, company.companyId, 'closed');
+
+  // Removing a job from open status also changes the public board.
+  try {
+    await redis.del(PUBLIC_BOARD_CACHE_KEY);
+  } catch (err) {
+    console.error('[cache] Failed to invalidate public board cache:', err);
+  }
+
+
 }
 
 export async function getCompanyJobs(userId: string, input: ListCompanyJobsInput) {
@@ -69,11 +89,6 @@ export async function getCompanyJobs(userId: string, input: ListCompanyJobsInput
 
   return { jobs: items, nextCursor };
 }
-
-
-
-
-
 
 
 
