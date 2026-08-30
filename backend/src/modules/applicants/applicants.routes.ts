@@ -1,15 +1,50 @@
 import { Router } from 'express';
 import { authMiddleware } from '../../shared/auth-middleware';
 import { requireRole } from '../../shared/require-role';
+import * as service from './applicants.service';
 
 const router = Router();
 
 // Every route on this router requires a valid token with role 'applicant'.
 router.use(authMiddleware, requireRole('applicant'));
 
-// Placeholder — real endpoints are added in later chapters.
-router.get('/', (_req, res) => {
-  res.status(501).json({ error: 'Not Implemented' });
+router.post('/profile', async (req, res, next) => {
+  try {
+    const { full_name, headline, location, attributes } = req.body;
+    const profile = await service.createProfile(req.user!.userId, {
+      full_name,
+      headline,
+      location,
+      attributes,
+    });
+    res.status(201).json(profile);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/profile', async (req, res, next) => {
+  try {
+    const profile = await service.getProfile(req.user!.userId);
+    res.json(profile);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch('/profile', async (req, res, next) => {
+  try {
+    const { full_name, headline, location, attributes } = req.body;
+    const profile = await service.updateProfile(req.user!.userId, {
+      full_name,
+      headline,
+      location,
+      attributes,
+    });
+    res.json(profile);
+  } catch (err) {
+    next(err);
+  }
 });
 
 export { router as applicantsRouter };
