@@ -18,6 +18,7 @@ const EnvSchema = z.object({
   OTP_EXPIRES_IN_MINUTES: z.coerce.number().int().positive().default(15),
   INVITATION_EXPIRES_IN_HOURS: z.coerce.number().int().positive().default(72),
   APP_BASE_URL: z.string().default('http://localhost:3000'),
+  CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(60),
 });
 
 // Validate the WHOLE environment once, here, at startup.
