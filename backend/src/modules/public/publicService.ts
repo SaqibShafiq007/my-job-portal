@@ -34,15 +34,20 @@ export async function getPublicJobs(query: PublicJobsQuery) {
   const params: unknown[] = [];
   const conditions: string[] = [`j.status = 'open'`, `c.verified = true`];
 
+  // Full-text search using tsvector + GIN index (replaces ILIKE from ch39)
   if (q) {
-    params.push(`%${q}%`);
-    conditions.push(`(j.title ILIKE $${params.length} OR j.description ILIKE $${params.length})`);
+    params.push(q);
+    conditions.push(
+      `j.search_vector @@ plainto_tsquery('english', $${params.length})`
+    );
   }
 
   const decoded = cursor ? decodeCursor(cursor) : null;
   if (decoded) {
     params.push(decoded.createdAt, decoded.id);
-    conditions.push(`(j.created_at, j.id) < ($${params.length - 1}::timestamptz, $${params.length})`);
+    conditions.push(
+      `(j.created_at, j.id) < ($${params.length - 1}::timestamptz, $${params.length})`
+    );
   }
 
   const whereClause = conditions.join(' AND ');
@@ -75,7 +80,6 @@ export async function getPublicJobs(query: PublicJobsQuery) {
     nextCursor,
   };
 }
-
 export async function getPublicJobById(id: string) {
   const sql = `
     SELECT j.id, j.title, j.description, j.deadline, j.attributes,
