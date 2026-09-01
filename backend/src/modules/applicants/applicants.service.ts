@@ -1,6 +1,10 @@
 // backend/src/modules/applicants/applicants.service.ts
 import * as repo from './applicants.repo';
-import { ConflictError, NotFoundError } from '../../shared/errors';
+import { ConflictError, ForbiddenError, NotFoundError } from '../../shared/errors';
+import { v4 as uuidv4 } from 'uuid';
+import { getPresignedUploadUrl } from '../../shared/storage';
+import {config} from '../../shared/config';
+
 
 export async function createProfile(
   userId: string,
@@ -40,4 +44,29 @@ export async function updateProfile(
   const profile = await repo.findApplicantByUserId(userId);
   if (!profile) throw new NotFoundError('Profile not found');
   return repo.updateApplicantProfile(profile.id, fields);
+}
+
+
+export async function getResumeUploadUrl(userId: string) {
+  const profile = await repo.findApplicantByUserId(userId);
+  if (!profile) throw new NotFoundError('Profile not found — create your profile first');
+
+  const key = `resumes/${profile.id}/${uuidv4()}.pdf`;
+  const uploadUrl = await getPresignedUploadUrl(key, 'application/pdf');
+  return { uploadUrl, key };
+}
+
+export async function confirmResumeUpload(
+  userId: string,
+  body: { key: string; filename: string }
+) {
+  const profile = await repo.findApplicantByUserId(userId);
+  if (!profile) throw new NotFoundError('Profile not found');
+
+  // Verify the key belongs to this applicant
+  if (!body.key.startsWith(`resumes/${profile.id}/`)) {
+    throw new ForbiddenError('Key does not belong to this applicant');
+  }
+
+  return repo.createResume(profile.id, body.filename, body.key);
 }

@@ -91,3 +91,29 @@ export async function updateApplicantProfile(
   );
   return result.rows[0] ?? null;
 }
+
+
+export async function createResume(
+  applicantId: string,
+  filename: string,
+  s3Key: string
+) {
+  const result = await db.query(
+    `INSERT INTO resumes (applicant_id, filename, s3_key)
+     VALUES ($1, $2, $3)
+     RETURNING id, applicant_id, filename, s3_key, uploaded_at`,
+    [applicantId, filename, s3Key]
+  );
+  return result.rows[0];
+}
+
+export async function listResumes(applicantId: string) {
+  const result = await db.query(
+    `SELECT id, filename, s3_key, uploaded_at
+     FROM resumes
+     WHERE applicant_id = $1
+     ORDER BY uploaded_at DESC`,
+    [applicantId]
+  );
+  return result.rows;
+}

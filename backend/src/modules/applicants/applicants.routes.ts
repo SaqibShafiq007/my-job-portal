@@ -47,4 +47,24 @@ router.patch('/profile', async (req, res, next) => {
   }
 });
 
+
+router.post('/profile/resume-upload', async (req, res, next) => {
+  try {
+    const result = await service.getResumeUploadUrl(req.user!.userId);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/profile/resume', async (req, res, next) => {
+  try {
+    const { key, filename } = req.body;
+    const resume = await service.confirmResumeUpload(req.user!.userId, { key, filename });
+    res.status(201).json(resume);
+  } catch (err) {
+    next(err);
+  }
+});
+
 export { router as applicantsRouter };

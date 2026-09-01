@@ -19,6 +19,11 @@ const EnvSchema = z.object({
   INVITATION_EXPIRES_IN_HOURS: z.coerce.number().int().positive().default(72),
   APP_BASE_URL: z.string().default('http://localhost:3000'),
   CACHE_TTL_SECONDS: z.coerce.number().int().positive().default(60),
+  S3_ENDPOINT:          z.string().url(),
+  S3_REGION:            z.string().default('us-east-1'),
+  S3_BUCKET:            z.string(),
+  S3_ACCESS_KEY_ID:     z.string(),
+  S3_SECRET_ACCESS_KEY: z.string(),
 });
 
 // Validate the WHOLE environment once, here, at startup.
