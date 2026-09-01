@@ -67,4 +67,32 @@ router.post('/profile/resume', async (req, res, next) => {
   }
 });
 
+router.post('/shortlist', async (req, res, next) => {
+  try {
+    const { jobId } = req.body;
+    const item = await service.addJobToShortlist(req.user!.userId, jobId);
+    res.status(201).json(item);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/shortlist', async (req, res, next) => {
+  try {
+    const items = await service.getShortlist(req.user!.userId);
+    res.json({ shortlist: items });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.delete('/shortlist/:jobId', async (req, res, next) => {
+  try {
+    await service.removeJobFromShortlist(req.user!.userId, req.params.jobId);
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
 export { router as applicantsRouter };

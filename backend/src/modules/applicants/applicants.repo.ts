@@ -1,5 +1,5 @@
 import db from '../../shared/db';
-import { NotFoundError } from '../../shared/errors';
+import { BadRequestError, NotFoundError } from '../../shared/errors';
 
 /**
  * Asserts that the applicant record identified by applicantId belongs
@@ -116,4 +116,62 @@ export async function listResumes(applicantId: string) {
     [applicantId]
   );
   return result.rows;
+}
+
+export async function addToShortlist(applicantId: string, jobId: string) {
+  // Verify job exists and is open
+  const job = await db.query(
+    `SELECT id FROM jobs WHERE id = $1 AND status = 'open'`,
+    [jobId],
+  );
+  if (job.rowCount === 0) throw new NotFoundError('Job not found or not open');
+
+  // Check limit
+  const count = await db.query(
+    `SELECT COUNT(*) FROM shortlist_items WHERE applicant_id = $1`,
+    [applicantId],
+  );
+  if (parseInt(count.rows[0].count, 10) >= 100) {
+    throw new BadRequestError('Shortlist limit of 100 items reached');
+  }
+
+  const result = await db.query(
+    `INSERT INTO shortlist_items (applicant_id, job_id)
+     VALUES ($1, $2)
+     RETURNING id, applicant_id, job_id, created_at`,
+    [applicantId, jobId],
+  );
+  return result.rows[0];
+}
+
+export async function listShortlist(applicantId: string) {
+  const result = await db.query(
+    `SELECT
+       si.id,
+       si.job_id,
+       si.created_at,
+       j.title,
+       j.status AS job_status,
+       j.created_at AS job_created_at,
+       c.id   AS company_id,
+       c.name AS company_name
+     FROM shortlist_items si
+     JOIN jobs      j ON j.id = si.job_id
+     JOIN companies c ON c.id = j.company_id
+     WHERE si.applicant_id = $1
+     ORDER BY si.created_at DESC
+     LIMIT 100`,
+    [applicantId],
+  );
+  return result.rows;
+}
+
+export async function removeFromShortlist(applicantId: string, jobId: string) {
+  const result = await db.query(
+    `DELETE FROM shortlist_items
+     WHERE applicant_id = $1 AND job_id = $2
+     RETURNING id`,
+    [applicantId, jobId],
+  );
+  if (result.rowCount === 0) throw new NotFoundError('Shortlist item not found');
 }

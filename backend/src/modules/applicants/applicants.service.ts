@@ -70,3 +70,27 @@ export async function confirmResumeUpload(
 
   return repo.createResume(profile.id, body.filename, body.key);
 }
+
+export async function addJobToShortlist(userId: string, jobId: string) {
+  const profile = await repo.findApplicantByUserId(userId);
+  if (!profile) throw new NotFoundError('Profile not found');
+
+  try {
+    return await repo.addToShortlist(profile.id, jobId);
+  } catch (err: any) {
+    if (err.code === '23505') throw new ConflictError('Job already in shortlist');
+    throw err;
+  }
+}
+
+export async function getShortlist(userId: string) {
+  const profile = await repo.findApplicantByUserId(userId);
+  if (!profile) throw new NotFoundError('Profile not found');
+  return repo.listShortlist(profile.id);
+}
+
+export async function removeJobFromShortlist(userId: string, jobId: string) {
+  const profile = await repo.findApplicantByUserId(userId);
+  if (!profile) throw new NotFoundError('Profile not found');
+  await repo.removeFromShortlist(profile.id, jobId);
+}
