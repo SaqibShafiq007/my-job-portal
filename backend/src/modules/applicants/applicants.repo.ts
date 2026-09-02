@@ -175,3 +175,39 @@ export async function removeFromShortlist(applicantId: string, jobId: string) {
   );
   if (result.rowCount === 0) throw new NotFoundError('Shortlist item not found');
 }
+
+export async function checkExistingApplications(
+  applicantId: string,
+  jobIds: string[],
+): Promise<string[]> {
+  const result = await db.query(
+    `SELECT job_id FROM applications
+     WHERE applicant_id = $1 AND job_id = ANY($2::uuid[])`,
+    [applicantId, jobIds],
+  );
+  return result.rows.map((r) => r.job_id);
+}
+
+export async function insertApplication(
+  applicantId: string,
+  jobId: string,
+  answers: unknown,
+  snapshot: unknown,
+) {
+  const result = await db.query(
+    `INSERT INTO applications (job_id, applicant_id, screening_answers, profile_snapshot)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (job_id, applicant_id) DO NOTHING
+     RETURNING id`,
+    [jobId, applicantId, JSON.stringify(answers), JSON.stringify(snapshot)],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function getOpenJobs(jobIds: string[]): Promise<{ id: string }[]> {
+  const result = await db.query(
+    `SELECT id FROM jobs WHERE id = ANY($1::uuid[]) AND status = 'open'`,
+    [jobIds],
+  );
+  return result.rows;
+}

@@ -1,6 +1,6 @@
 // backend/src/modules/applicants/applicants.service.ts
 import * as repo from './applicants.repo';
-import { ConflictError, ForbiddenError, NotFoundError } from '../../shared/errors';
+import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../../shared/errors';
 import { v4 as uuidv4 } from 'uuid';
 import { getPresignedUploadUrl } from '../../shared/storage';
 import {config} from '../../shared/config';
@@ -93,4 +93,48 @@ export async function removeJobFromShortlist(userId: string, jobId: string) {
   const profile = await repo.findApplicantByUserId(userId);
   if (!profile) throw new NotFoundError('Profile not found');
   await repo.removeFromShortlist(profile.id, jobId);
+}
+
+export async function applyToJobs(
+  userId: string,
+  body: { jobIds: string[]; answers: Record<string, unknown[]> },
+) {
+  if (body.jobIds.length === 0 || body.jobIds.length > 10) {
+    throw new BadRequestError('jobIds must contain 1–10 items');
+  }
+
+  const profile = await repo.findApplicantByUserId(userId);
+  if (!profile) throw new NotFoundError('Profile not found');
+
+  const openJobs = await repo.getOpenJobs(body.jobIds);
+  const openJobIds = new Set(openJobs.map((j) => j.id));
+  const closedOrMissing = body.jobIds.filter((id) => !openJobIds.has(id));
+  if (closedOrMissing.length > 0) {
+    throw new NotFoundError(`Jobs not found or not open: ${closedOrMissing.join(', ')}`);
+  }
+
+  const alreadyApplied = await repo.checkExistingApplications(profile.id, body.jobIds);
+  const alreadyAppliedSet = new Set(alreadyApplied);
+
+  const created: string[] = [];
+  const skipped: string[] = [];
+
+  for (const jobId of body.jobIds) {
+    if (alreadyAppliedSet.has(jobId)) {
+      skipped.push(jobId);
+      continue;
+    }
+
+    const answers = body.answers[jobId] ?? [];
+    const snapshot = {}; // snapshot content added in ch51
+
+    const application = await repo.insertApplication(profile.id, jobId, answers, snapshot);
+    if (application) {
+      created.push(application.id);
+    } else {
+      skipped.push(jobId);
+    }
+  }
+
+  return { created, skipped };
 }
