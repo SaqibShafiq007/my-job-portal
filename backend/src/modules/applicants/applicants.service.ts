@@ -116,6 +116,9 @@ export async function applyToJobs(
   const alreadyApplied = await repo.checkExistingApplications(profile.id, body.jobIds);
   const alreadyAppliedSet = new Set(alreadyApplied);
 
+  // Build once for the whole submission — same profile at the same moment
+  const snapshot = await repo.buildApplicantSnapshot(profile.id);
+
   const created: string[] = [];
   const skipped: string[] = [];
 
@@ -126,8 +129,6 @@ export async function applyToJobs(
     }
 
     const answers = body.answers[jobId] ?? [];
-    const snapshot = {}; // snapshot content added in ch51
-
     const application = await repo.insertApplication(profile.id, jobId, answers, snapshot);
     if (application) {
       created.push(application.id);

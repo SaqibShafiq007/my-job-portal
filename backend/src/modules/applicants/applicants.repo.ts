@@ -211,3 +211,38 @@ export async function getOpenJobs(jobIds: string[]): Promise<{ id: string }[]> {
   );
   return result.rows;
 }
+
+type ApplicationSnapshot = {
+  fullName: string;
+  headline: string | null;
+  location: string | null;
+  attributes: Record<string, unknown>;
+  resumeKey: string | null;
+};
+
+export async function buildApplicantSnapshot(applicantId: string): Promise<ApplicationSnapshot> {
+  console.log('buildApplicantSnapshot called for', applicantId);
+  const profileResult = await db.query(
+    `SELECT full_name, headline, location, attributes FROM applicants WHERE id = $1`,
+    [applicantId],
+  );
+  const profile = profileResult.rows[0];
+  if (!profile) throw new NotFoundError('Applicant profile not found');
+
+  const resumeResult = await db.query(
+    `SELECT s3_key FROM resumes
+     WHERE applicant_id = $1
+     ORDER BY uploaded_at DESC
+     LIMIT 1`,
+    [applicantId],
+  );
+  const resumeKey = resumeResult.rows[0]?.s3_key ?? null;
+
+  return {
+    fullName: profile.full_name,
+    headline: profile.headline ?? null,
+    location: profile.location ?? null,
+    attributes: profile.attributes ?? {},
+    resumeKey,
+  };
+}
