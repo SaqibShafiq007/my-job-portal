@@ -1,5 +1,6 @@
 import db from '../../shared/db';
 import { BadRequestError, NotFoundError } from '../../shared/errors';
+import type { PoolClient } from 'pg';
 
 /**
  * Asserts that the applicant record identified by applicantId belongs
@@ -188,13 +189,15 @@ export async function checkExistingApplications(
   return result.rows.map((r) => r.job_id);
 }
 
+
 export async function insertApplication(
+  client: PoolClient,
   applicantId: string,
   jobId: string,
   answers: unknown,
   snapshot: unknown,
 ) {
-  const result = await db.query(
+  const result = await client.query(
     `INSERT INTO applications (job_id, applicant_id, screening_answers, profile_snapshot)
      VALUES ($1, $2, $3, $4)
      ON CONFLICT (job_id, applicant_id) DO NOTHING
@@ -221,7 +224,7 @@ type ApplicationSnapshot = {
 };
 
 export async function buildApplicantSnapshot(applicantId: string): Promise<ApplicationSnapshot> {
-  console.log('buildApplicantSnapshot called for', applicantId);
+  //console.log('buildApplicantSnapshot called for', applicantId);
   const profileResult = await db.query(
     `SELECT full_name, headline, location, attributes FROM applicants WHERE id = $1`,
     [applicantId],

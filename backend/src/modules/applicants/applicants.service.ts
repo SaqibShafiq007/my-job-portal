@@ -4,7 +4,7 @@ import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '.
 import { v4 as uuidv4 } from 'uuid';
 import { getPresignedUploadUrl } from '../../shared/storage';
 import {config} from '../../shared/config';
-
+import { pool } from '../../shared/db';
 
 export async function createProfile(
   userId: string,
@@ -95,6 +95,7 @@ export async function removeJobFromShortlist(userId: string, jobId: string) {
   await repo.removeFromShortlist(profile.id, jobId);
 }
 
+
 export async function applyToJobs(
   userId: string,
   body: { jobIds: string[]; answers: Record<string, unknown[]> },
@@ -116,25 +117,29 @@ export async function applyToJobs(
   const alreadyApplied = await repo.checkExistingApplications(profile.id, body.jobIds);
   const alreadyAppliedSet = new Set(alreadyApplied);
 
-  // Build once for the whole submission — same profile at the same moment
   const snapshot = await repo.buildApplicantSnapshot(profile.id);
 
+  const jobsToInsert = body.jobIds.filter((id) => !alreadyAppliedSet.has(id));
+  const skipped = body.jobIds.filter((id) => alreadyAppliedSet.has(id));
   const created: string[] = [];
-  const skipped: string[] = [];
 
-  for (const jobId of body.jobIds) {
-    if (alreadyAppliedSet.has(jobId)) {
-      skipped.push(jobId);
-      continue;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    for (const jobId of jobsToInsert) {
+      const answers = body.answers[jobId] ?? [];
+      const application = await repo.insertApplication(client, profile.id, jobId, answers, snapshot);
+      if (application) created.push(application.id);
+      else skipped.push(jobId);
     }
 
-    const answers = body.answers[jobId] ?? [];
-    const application = await repo.insertApplication(profile.id, jobId, answers, snapshot);
-    if (application) {
-      created.push(application.id);
-    } else {
-      skipped.push(jobId);
-    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
 
   return { created, skipped };

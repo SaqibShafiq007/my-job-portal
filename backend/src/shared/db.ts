@@ -1,6 +1,10 @@
 import { Pool } from 'pg';
-import { config } from './config';
+import { config } from './config';   
 
-const pool = new Pool({ connectionString: config.DATABASE_URL });
+export const pool = new Pool({
+  connectionString: config.DATABASE_URL,
+  application_name: 'job-portal',
+});
 
-export default pool;
+const db = { query: pool.query.bind(pool) };
+export default db;
