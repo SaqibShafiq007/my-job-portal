@@ -29,7 +29,12 @@ export default function LoginPage() {
       return;
     }
 
-    router.push('/dashboard/jobs');
+    const data = await res.json();
+    if (data.role === 'applicant') {
+      router.push('/dashboard/shortlist');
+    } else {
+      router.push('/dashboard/jobs');
+    }
   }
 
   return (

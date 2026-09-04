@@ -1,5 +1,4 @@
 // frontend/app/api/auth/login/route.ts
-import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -14,22 +13,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(await res.json(), { status: res.status });
   }
 
-  const { accessToken, refreshToken } = await res.json();
+  const { accessToken, refreshToken, role } = await res.json();
 
-  const response = NextResponse.json({ ok: true });
+  const response = NextResponse.json({ ok: true, role });
   response.cookies.set('access_token', accessToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 15, // 15 minutes
+    maxAge: 60 * 15,
   });
   response.cookies.set('refresh_token', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 7,
   });
   return response;
 }

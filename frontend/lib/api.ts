@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 
 const API_URL = process.env.API_URL!;
 
+
 export async function apiFetch(
   path: string,
   options: RequestInit = {},
