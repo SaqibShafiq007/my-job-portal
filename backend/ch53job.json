@@ -1,0 +1,4 @@
+﻿{
+    "description":  "Testing retry safety.",
+    "title":  "Ch53 Idempotency Test Job"
+}

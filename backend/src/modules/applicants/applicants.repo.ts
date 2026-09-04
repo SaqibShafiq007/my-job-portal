@@ -204,7 +204,17 @@ export async function insertApplication(
      RETURNING id`,
     [jobId, applicantId, JSON.stringify(answers), JSON.stringify(snapshot)],
   );
-  return result.rows[0] ?? null;
+
+  if (result.rows[0]) {
+    return { id: result.rows[0].id, created: true };
+  }
+
+  // Row already existed — fetch it
+  const existing = await client.query(
+    `SELECT id FROM applications WHERE job_id = $1 AND applicant_id = $2`,
+    [jobId, applicantId],
+  );
+  return { id: existing.rows[0].id, created: false };
 }
 
 export async function getOpenJobs(jobIds: string[]): Promise<{ id: string }[]> {
