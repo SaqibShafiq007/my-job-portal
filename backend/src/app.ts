@@ -9,6 +9,7 @@ import { adminRouter } from './modules/admin/admin.routes';
 import { jobsRouter } from './modules/jobs/jobs.routes';
 import { z } from 'zod'
 import { publicRouter } from './modules/public/publicRouter';
+import { applicationsRouter } from './modules/applications/applications.routes';
 
 export function buildApp() {
   const app = express()
@@ -33,7 +34,7 @@ export function buildApp() {
   app.use('/api/applicants', applicantsRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/jobs', jobsRouter);
-
+  app.use('/api/companies/applications', applicationsRouter);
   app.use(errorHandler)
 
   return app
