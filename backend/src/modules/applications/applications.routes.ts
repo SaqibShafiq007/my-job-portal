@@ -20,4 +20,18 @@ router.patch('/:id/stage', async (req, res, next) => {
   }
 });
 
+router.post('/:id/interview', async (req, res, next) => {
+  try {
+    const { scheduledAt, meetingLink, notes } = req.body;
+    const interview = await service.scheduleInterview(
+      req.user!.userId,
+      req.params.id,
+      { scheduledAt, meetingLink, notes },
+    );
+    res.status(201).json(interview);
+  } catch (err) {
+    next(err);
+  }
+});
+
 export { router as applicationsRouter };
