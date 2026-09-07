@@ -35,6 +35,7 @@ export function buildApp() {
   app.use('/api/admin', adminRouter);
   app.use('/api/jobs', jobsRouter);
   app.use('/api/companies/applications', applicationsRouter);
+  app.use('/api/companies/interviews', applicationsRouter);
   app.use(errorHandler)
 
   return app

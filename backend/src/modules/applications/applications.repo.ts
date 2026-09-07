@@ -56,3 +56,37 @@ export async function createInterview(
   );
   return result.rows[0];
 }
+
+export async function findInterviewForCompany(
+  interviewId: string,
+  companyId: string,
+) {
+  const result = await db.query(
+    `SELECT
+       i.id, i.application_id, i.scheduled_at, i.meeting_link,
+       i.notes, i.feedback, i.outcome,
+       a.stage AS application_stage,
+       j.company_id
+     FROM interviews i
+     JOIN applications a ON a.id = i.application_id
+     JOIN jobs         j ON j.id = a.job_id
+     WHERE i.id = $1 AND j.company_id = $2`,
+    [interviewId, companyId],
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function updateInterviewFeedback(
+  interviewId: string,
+  feedback: string,
+  outcome: 'moved_forward' | 'rejected',
+) {
+  const result = await db.query(
+    `UPDATE interviews
+     SET feedback = $1, outcome = $2
+     WHERE id = $3
+     RETURNING id, application_id, scheduled_at, meeting_link, notes, feedback, outcome, created_at`,
+    [feedback, outcome, interviewId],
+  );
+  return result.rows[0] ?? null;
+}

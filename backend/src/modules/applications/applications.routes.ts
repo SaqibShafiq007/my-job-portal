@@ -34,4 +34,18 @@ router.post('/:id/interview', async (req, res, next) => {
   }
 });
 
+router.patch('/:id/feedback', async (req, res, next) => {
+  try {
+    const { feedback, outcome } = req.body;
+    const result = await service.recordInterviewFeedback(
+      req.user!.userId,
+      req.params.id,
+      { feedback, outcome },
+    );
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 export { router as applicationsRouter };
