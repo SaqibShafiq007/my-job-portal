@@ -66,5 +66,60 @@ router.patch('/companies/:id/suspend', async (req, res, next) => {
   }
 });
 
+// Lists all jobs across every company, with optional ?status= and ?companyId= filters.
+router.get('/jobs', async (req, res, next) => {
+  try {
+    const jobs = await service.listJobs(
+      req.query.status as string | undefined,
+      req.query.companyId as string | undefined,
+    );
+    res.json({ jobs });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Force-closes any job, regardless of which company owns it.
+router.patch('/jobs/:id/close', async (req, res, next) => {
+  try {
+    const job = await service.forceCloseJob(req.params.id);
+    res.json({ job });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Lists all users on the platform, with optional ?role= and ?status= filters.
+router.get('/users', async (req, res, next) => {
+  try {
+    const users = await service.listUsers(
+      req.query.role as string | undefined,
+      req.query.status as string | undefined,
+    );
+    res.json({ users });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Suspends a user's account and invalidates their active sessions.
+router.patch('/users/:id/suspend', async (req, res, next) => {
+  try {
+    const user = await service.suspendUser(req.user!.userId, req.params.id);
+    res.json({ user });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Reactivates a previously suspended user's account.
+router.patch('/users/:id/activate', async (req, res, next) => {
+  try {
+    const user = await service.activateUser(req.params.id);
+    res.json({ user });
+  } catch (err) {
+    next(err);
+  }
+});
 
 export { router as adminRouter };
