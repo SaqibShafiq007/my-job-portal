@@ -3,6 +3,7 @@ import { authMiddleware } from '../../shared/auth-middleware';
 import { requireRole } from '../../shared/require-role';
 import { NotFoundError } from '../../shared/errors';
 import db  from '../../shared/db';
+import * as service from './admin.service';
 
 const router = Router();
 
@@ -33,5 +34,37 @@ router.get('/jobs/:id', async (req, res, next) => {
     next(err);
   }
 });
+
+
+// Lists all companies for admin review, optionally filtered by ?status= (verified/suspended/pending).
+router.get('/companies', async (req, res, next) => {
+  try {
+    const companies = await service.listCompanies(req.query.status as string | undefined);
+    res.json({ companies });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Marks a company as verified, making its jobs eligible for the public board.
+router.patch('/companies/:id/verify', async (req, res, next) => {
+  try {
+    const company = await service.verifyCompany(req.params.id);
+    res.json({ company });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Suspends a company: closes its open jobs and purges the public board cache.
+router.patch('/companies/:id/suspend', async (req, res, next) => {
+  try {
+    const company = await service.suspendCompany(req.params.id);
+    res.json({ company });
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 export { router as adminRouter };
