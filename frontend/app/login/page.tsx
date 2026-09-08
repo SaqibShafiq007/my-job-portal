@@ -32,6 +32,8 @@ export default function LoginPage() {
     const data = await res.json();
     if (data.role === 'applicant') {
       router.push('/dashboard/shortlist');
+    } else if (data.role === 'admin') {
+      router.push('/admin/companies');
     } else {
       router.push('/dashboard/jobs');
     }
