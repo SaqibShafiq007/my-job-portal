@@ -135,3 +135,21 @@ export async function recordInterviewFeedback(
 
   return { interview: updatedInterview, application: updatedApplication };
 }
+
+
+export async function getCompanyPipeline(userId: string) {
+  const company = await getRecruiterCompany(userId);
+  if (!company) throw new ForbiddenError('No company workspace found.');
+
+  const applications = await repo.findApplicationsForCompany(company.companyId);
+
+  const pipeline: Record<string, typeof applications> = Object.fromEntries(
+    STAGE_ORDER.map((stage) => [stage, []]),
+  );
+
+  for (const app of applications) {
+    pipeline[app.stage]?.push(app);
+  }
+
+  return pipeline;
+}

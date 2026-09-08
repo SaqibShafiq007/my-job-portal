@@ -48,4 +48,16 @@ router.patch('/:id/feedback', async (req, res, next) => {
   }
 });
 
+
+router.get('/', async (req, res, next) => {
+  try {
+    const pipeline = await service.getCompanyPipeline(req.user!.userId);
+    res.json({ pipeline });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
+
 export { router as applicationsRouter };

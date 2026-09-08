@@ -90,3 +90,31 @@ export async function updateInterviewFeedback(
   );
   return result.rows[0] ?? null;
 }
+
+export async function findApplicationsForCompany(companyId: string) {
+  const result = await db.query(
+    `SELECT
+       a.id,
+       a.stage,
+       a.created_at,
+       a.profile_snapshot->>'headline' AS headline,
+       a.applicant_id,
+       j.title AS job_title,
+       (
+         SELECT row_to_json(i_sub)
+         FROM (
+           SELECT id, scheduled_at, meeting_link, outcome
+           FROM interviews
+           WHERE application_id = a.id
+           ORDER BY created_at DESC
+           LIMIT 1
+         ) i_sub
+       ) AS latest_interview
+     FROM applications a
+     JOIN jobs j ON j.id = a.job_id
+     WHERE j.company_id = $1
+     ORDER BY a.stage, a.created_at DESC`,
+    [companyId],
+  );
+  return result.rows;
+}

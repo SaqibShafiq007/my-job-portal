@@ -105,4 +105,13 @@ router.post('/apply', async (req, res, next) => {
   }
 });
 
+router.get('/applications', async (req, res, next) => {
+  try {
+    const applications = await service.getMyApplications(req.user!.userId);
+    res.json({ applications });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export { router as applicantsRouter };
