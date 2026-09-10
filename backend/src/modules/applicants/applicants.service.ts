@@ -58,6 +58,7 @@ export async function getResumeUploadUrl(userId: string) {
   return { uploadUrl, key };
 }
 
+// Confirms a résumé upload, creates the DB record, and enqueues background word-count processing
 export async function confirmResumeUpload(
   userId: string,
   body: { key: string; filename: string }
@@ -70,7 +71,15 @@ export async function confirmResumeUpload(
     throw new ForbiddenError('Key does not belong to this applicant');
   }
 
-  return repo.createResume(profile.id, body.filename, body.key);
+  const resume = await repo.createResume(profile.id, body.filename, body.key);
+
+  // Enqueue background job to download the file and compute word count
+  await queue.add('process-resume', {
+    resumeId: resume.id,
+    s3Key: resume.s3_key,
+  });
+
+  return resume;
 }
 
 export async function addJobToShortlist(userId: string, jobId: string) {
