@@ -290,3 +290,15 @@ export async function findApplicationsForApplicant(applicantId: string) {
   );
   return result.rows;
 }
+
+// Send confirmation email after a successful application submission
+export async function getJobDetailsForNotification(jobIds: string[]) {
+  const result = await db.query(
+    `SELECT j.id, j.title, c.name AS company_name
+     FROM jobs j
+     JOIN companies c ON c.id = j.company_id
+     WHERE j.id = ANY($1::uuid[])`,
+    [jobIds],
+  );
+  return result.rows as { id: string; title: string; company_name: string }[];
+}

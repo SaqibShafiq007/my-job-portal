@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { getPresignedUploadUrl } from '../../shared/storage';
 import {config} from '../../shared/config';
 import { pool } from '../../shared/db';
+import queue from '../../shared/queue';
+import { findUserById } from '../auth/auth.repo';
 
 export async function createProfile(
   userId: string,
@@ -122,20 +124,23 @@ export async function applyToJobs(
   const jobsToInsert = body.jobIds.filter((id) => !alreadyAppliedSet.has(id));
   const skipped = body.jobIds.filter((id) => alreadyAppliedSet.has(id));
   const created: string[] = [];
+  // Track which job IDs actually resulted in a new application, for the email step below
+  const newlyCreatedJobIds: string[] = [];
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
     for (const jobId of jobsToInsert) {
-    const answers = body.answers[jobId] ?? [];
-    const application = await repo.insertApplication(client, profile.id, jobId, answers, snapshot);
-    if (application.created) {
-      created.push(application.id);
-    } else {
-      skipped.push(jobId);
+      const answers = body.answers[jobId] ?? [];
+      const application = await repo.insertApplication(client, profile.id, jobId, answers, snapshot);
+      if (application.created) {
+        created.push(application.id);
+        newlyCreatedJobIds.push(jobId);
+      } else {
+        skipped.push(jobId);
+      }
     }
-}
 
     await client.query('COMMIT');
   } catch (err) {
@@ -143,6 +148,20 @@ export async function applyToJobs(
     throw err;
   } finally {
     client.release();
+  }
+
+  // Enqueue a confirmation email job for each newly created application
+  if (newlyCreatedJobIds.length > 0) {
+    const user = await findUserById(userId);
+    const jobDetails = await repo.getJobDetailsForNotification(newlyCreatedJobIds);
+
+    for (const job of jobDetails) {
+      await queue.add('send-application-confirmation', {
+        applicantEmail: user?.email,
+        jobTitle: job.title,
+        companyName: job.company_name,
+      });
+    }
   }
 
   return { created, skipped };

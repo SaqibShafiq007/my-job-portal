@@ -68,3 +68,20 @@ export async function sendInterviewNotification(
     ].filter(Boolean).join('\n'),
   });
 }
+
+
+export async function sendApplicationConfirmationEmail(
+  to: string,
+  jobTitle: string,
+  companyName: string,
+): Promise<void> {
+  await sendMail({
+    to,
+    subject: `Application received: ${jobTitle} at ${companyName}`,
+    text: [
+      `Thank you for applying to ${jobTitle} at ${companyName}.`,
+      `Your application has been received and is under review.`,
+      `You will hear back from the hiring team if your profile is a match.`,
+    ].join('\n\n'),
+  });
+}
