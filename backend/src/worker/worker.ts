@@ -6,6 +6,7 @@ import { sendApplicationConfirmationEmail } from '../shared/mailer';
 import { processResume } from './handlers/processResume';
 import { cleanupExpiredOtps } from './handlers/cleanupExpiredOtps';
 import { cleanupExpiredTokens } from './handlers/cleanupExpiredTokens';
+import { sendRecruiterDigest } from './handlers/sendRecruiterDigest';
 
 const schedulerQueue = new Queue('jobs', {
   connection: { url: config.REDIS_URL },
@@ -25,6 +26,12 @@ async function registerRepeatableJobs() {
     'cleanup-expired-refresh-tokens-scheduler',
     { pattern: '0 1 * * *' }, // daily at 01:00 UTC
     { name: 'cleanup-expired-refresh-tokens', data: {} },
+  );
+
+  await schedulerQueue.upsertJobScheduler(
+    'send-recruiter-digest-scheduler',
+    { pattern: '0 8 * * 1' }, // every Monday at 08:00 UTC
+    { name: 'send-recruiter-digest', data: {} },
   );
 
   const schedulers = await schedulerQueue.getJobSchedulers();
@@ -53,6 +60,10 @@ const worker = new Worker(
       }
       case 'cleanup-expired-refresh-tokens': {
         await cleanupExpiredTokens();
+        break;
+      }
+      case 'send-recruiter-digest': {
+        await sendRecruiterDigest();
         break;
       }
       default:
