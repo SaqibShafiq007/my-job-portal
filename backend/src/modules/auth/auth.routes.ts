@@ -19,10 +19,11 @@ import {
   resendVerification,
   acceptInvitation,
 } from './auth.service';
+import { authLimiter } from '../../shared/rateLimiter';
 
 const router = Router();
 
-router.post('/register', async (req, res, next) => {
+router.post('/register',authLimiter  , async (req, res, next) => {
   try {
     const body = validateBody(registerSchema, req.body);
     const result = await register(body);
@@ -32,7 +33,7 @@ router.post('/register', async (req, res, next) => {
   }
 });
 
-router.post('/login', async (req, res, next) => {
+router.post('/login',authLimiter , async (req, res, next) => {
   try {
     const body = validateBody(loginSchema, req.body);
     const result = await login(body);
@@ -62,7 +63,7 @@ router.post('/logout', async (req, res, next) => {
   }
 });
 
-router.post('/verify-email', async (req, res, next) => {
+router.post('/verify-email',authLimiter , async (req, res, next) => {
   try {
     const { email, otp } = validateBody(verifyEmailSchema, req.body);
     await verifyEmail(email, otp);
@@ -72,7 +73,7 @@ router.post('/verify-email', async (req, res, next) => {
   }
 });
 
-router.post('/resend-verification', async (req, res, next) => {
+router.post('/resend-verification', authLimiter ,async (req, res, next) => {
   try {
     const { email } = validateBody(resendVerificationSchema, req.body);
     await resendVerification(email);

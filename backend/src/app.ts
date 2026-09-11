@@ -10,11 +10,13 @@ import { jobsRouter } from './modules/jobs/jobs.routes';
 import { z } from 'zod'
 import { publicRouter } from './modules/public/publicRouter';
 import { applicationsRouter } from './modules/applications/applications.routes';
+import { globalLimiter } from './shared/rateLimiter';
 
 export function buildApp() {
   const app = express()
 
   app.use(express.json())
+  app.use(globalLimiter)
 
   // Infrastructure
   app.get('/health', async (req, res) => {
@@ -29,7 +31,7 @@ export function buildApp() {
   // app.use('/auth', authRoutes)
   // app.use('/jobs', jobRoutes)
   app.use('/api/public', publicRouter);
-  app.use('/auth', authRouter);
+  app.use('/auth' , authRouter);
   app.use('/api/companies', companiesRouter);
   app.use('/api/applicants', applicantsRouter);
   app.use('/api/admin', adminRouter);

@@ -24,6 +24,8 @@ const EnvSchema = z.object({
   S3_BUCKET:            z.string(),
   S3_ACCESS_KEY_ID:     z.string(),
   S3_SECRET_ACCESS_KEY: z.string(),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
+  RATE_LIMIT_MAX:       z.coerce.number().int().positive().default(100),
 });
 
 // Validate the WHOLE environment once, here, at startup.
