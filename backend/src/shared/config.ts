@@ -26,6 +26,7 @@ const EnvSchema = z.object({
   S3_SECRET_ACCESS_KEY: z.string(),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
   RATE_LIMIT_MAX:       z.coerce.number().int().positive().default(100),
+    LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('debug'),
 });
 
 // Validate the WHOLE environment once, here, at startup.

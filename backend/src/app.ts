@@ -11,12 +11,16 @@ import { z } from 'zod'
 import { publicRouter } from './modules/public/publicRouter';
 import { applicationsRouter } from './modules/applications/applications.routes';
 import { globalLimiter } from './shared/rateLimiter';
+import { requestIdMiddleware } from './middleware/requestId';
+import { httpLogger } from './middleware/httpLogger';
 
 export function buildApp() {
   const app = express()
 
   app.use(express.json())
-  app.use(globalLimiter)
+  app.use(requestIdMiddleware)   // first: assign the ID
+  app.use(httpLogger)            // second: log with the ID
+  app.use(globalLimiter)         // rate limiter
 
   // Infrastructure
   app.get('/health', async (req, res) => {

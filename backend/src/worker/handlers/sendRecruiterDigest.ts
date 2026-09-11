@@ -1,4 +1,5 @@
 import db from '../../shared/db';
+import logger from '../../shared/logger';
 import { sendRecruiterDigestEmail } from '../../shared/mailer';
 
 interface CompanyDigest {
@@ -64,5 +65,5 @@ export async function sendRecruiterDigest(): Promise<void> {
     );
   }
 
-  console.log(`[digest] Sent digest emails to ${digests.length} companies`);
+    logger.info({ companyCount: digests.length }, '[digest] Sent digest emails');
 }

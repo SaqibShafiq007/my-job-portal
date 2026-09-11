@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import { config } from './config';
 import { AppError } from './errors';
 import { ValidationError } from './validate';
+import logger from './logger';
 
 export function errorHandler(
   err: unknown,
@@ -47,7 +48,7 @@ export function errorHandler(
     return;
   }
 
-  console.error('[unhandled error]', err);
+    logger.error({ requestId: req.id, err }, 'unhandled error');
 
   const message =
     config.NODE_ENV === 'development' && err instanceof Error

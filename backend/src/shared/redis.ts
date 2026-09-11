@@ -1,6 +1,7 @@
 // src/shared/redis.ts
 import { createClient } from 'redis';
 import { config } from './config';
+import logger from './logger';
 
 const redis = createClient({
   url: config.REDIS_URL,
@@ -8,11 +9,11 @@ const redis = createClient({
 });
 
 redis.on('error', (err) => {
-  console.error('Redis Client Error', err);
+  logger.error({ err },'Redis Client Error');
 });
 
 redis.connect().catch((err) => {
-  console.error('Failed to connect to Redis', err);
+  logger.error({ err } ,'Failed to connect to Redis');
   process.exit(1);
 });
 

@@ -4,6 +4,7 @@ import { assertCompanyRole } from '../companies/companies.service';
 import { assertJobOwnership, createJob, updateJob, setJobStatus, listJobsForCompany, encodeCursor } from './jobs.repo';
 import type { CreateJobInput, ListCompanyJobsInput } from './jobs.schema';
 import redis from '../../shared/redis'; 
+import logger from '../../shared/logger';
 
 const PUBLIC_BOARD_CACHE_KEY = 'jobs:public:page1'; 
 
@@ -50,7 +51,7 @@ export async function publishJob(userId: string, jobId: string) {
    try {
     await redis.del(PUBLIC_BOARD_CACHE_KEY);
   } catch (err) {
-    console.error('[cache] Failed to invalidate public board cache:', err);
+    logger.error({ err }, '[cache] Failed to invalidate public board cache');
   }
 }
 
@@ -67,7 +68,7 @@ export async function closeJob(userId: string, jobId: string) {
   try {
     await redis.del(PUBLIC_BOARD_CACHE_KEY);
   } catch (err) {
-    console.error('[cache] Failed to invalidate public board cache:', err);
+    logger.error({ err }, '[cache] Failed to invalidate public board cache');
   }
 
 

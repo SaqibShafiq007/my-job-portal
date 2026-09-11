@@ -7,6 +7,7 @@ import { processResume } from './handlers/processResume';
 import { cleanupExpiredOtps } from './handlers/cleanupExpiredOtps';
 import { cleanupExpiredTokens } from './handlers/cleanupExpiredTokens';
 import { sendRecruiterDigest } from './handlers/sendRecruiterDigest';
+import logger from '../shared/logger';
 
 const schedulerQueue = new Queue('jobs', {
   connection: { url: config.REDIS_URL },
@@ -35,13 +36,13 @@ async function registerRepeatableJobs() {
   );
 
   const schedulers = await schedulerQueue.getJobSchedulers();
-  console.log('[worker] Job schedulers registered:', schedulers.map((s) => s.name));
+    logger.info({ jobNames: schedulers.map((s) => s.name) }, '[worker] Job schedulers registered');
 }
 
 const worker = new Worker(
   'jobs',
   async (job: Job) => {
-    console.log(`[worker] Processing job ${job.name} (id: ${job.id})`);
+        logger.info({ jobName: job.name, jobId: job.id }, '[worker] Processing job');
 
     switch (job.name as JobName) {
       case 'send-application-confirmation': {
@@ -67,7 +68,7 @@ const worker = new Worker(
         break;
       }
       default:
-        console.warn(`[worker] Unknown job name: ${job.name}. Skipping.`);
+                logger.warn({ jobName: job.name }, '[worker] Unknown job name, skipping');
     }
   },
   {
@@ -76,4 +77,4 @@ const worker = new Worker(
   },
 );
 
-registerRepeatableJobs().catch(console.error);
+registerRepeatableJobs().catch((err) => logger.error({ err }, '[worker] Failed to register repeatable jobs'));
